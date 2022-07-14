@@ -1,0 +1,51 @@
+﻿<Window x:Class="ChartExplorer.CustomChart"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ChartExplorer"
+        mc:Ignorable="d"
+        Title="CustomChart" Height="450" Width="800">
+    <Grid 
+        Background="#FF454652">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="*"/>
+
+        </Grid.RowDefinitions>
+        <StackPanel
+            Orientation="Horizontal">
+            <Border/>
+            <Menu>
+       
+
+            </Menu>
+        </StackPanel>
+        <Grid
+            Grid.Row="1"
+            >
+
+            <local:GoTCanvas
+                Grid.ColumnSpan="2"
+                Grid.RowSpan="2"
+                x:Name="GoT" Background="#FF454652" Focusable="True">
+                <local:GoTCanvas.FocusVisualStyle>
+                    <Style/>
+                </local:GoTCanvas.FocusVisualStyle>
+            </local:GoTCanvas>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="50"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="20"/>
+            </Grid.RowDefinitions>
+
+        </Grid>
+
+    </Grid>
+</Window>
