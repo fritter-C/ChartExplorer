@@ -23,10 +23,6 @@ namespace ChartExplorer
         public CustomChart()
         {
             InitializeComponent();
-            CreateGraphicManger();
-        }
-        private void CreateGraphicManger()
-        {
             this.Cursor = Cursors.Arrow;
             _graphicManager = new GraphicManager(GoT, this);
         }
@@ -38,6 +34,7 @@ namespace ChartExplorer
         private DrawingVisual? _priceNavigator;
         private DrawingVisual? _timeScale;
         private DrawingVisual? _price;
+        private DrawingVisual? _average;
         public int VisualsCount()
         {
             return drawingVisuals.Count();
@@ -56,6 +53,7 @@ namespace ChartExplorer
         public GoTCanvas() : base()
         {
             drawingVisuals = new List<DrawingVisual>();
+            ClipToBounds = true;
 
         }
         public DrawingVisual GetNavigatorDrawingVisual()
@@ -65,32 +63,31 @@ namespace ChartExplorer
         public DrawingVisual GetPriceScale()
         {
             return _priceScale;
-        
+
         }
         protected override void OnRender(DrawingContext dc)
         {
             if (_priceScale is not null)
             {
-                using (DrawingContext dcScale = this._priceScale.RenderOpen())
-                {
-                    (_priceScale as PriceScaleVisual).DrawPriceScale(dcScale, this);
-                }
+                
+               ((PriceScaleVisual)_priceScale).DrawPriceScale(this);
+        
             }
-
-
             if (_timeScale is not null)
             {
-                using (DrawingContext dcScale = this._timeScale.RenderOpen())
-                {
-                    (_timeScale as TimeScaleVisual).DrawTimeScale(dcScale, this);
-                }
-
+                
+                ((TimeScaleVisual)_timeScale).DrawTimeScale(this);
+               
             }
             if (_price is not null)
             {
-              
-               (_price as PriceVisual).DrawCandles(this);
-        
+
+                ((PriceVisual)_price).DrawCandles(this);
+
+            }
+            if (_average is not null)
+            {
+                ((MovingAverageVisual)_average).Draw(this);
             }
 
             base.OnRender(dc);
@@ -130,8 +127,8 @@ namespace ChartExplorer
                 {
 
                     {
-                        drawingVisuals.Add((this._priceScale as PriceScaleVisual).PriceScaleNavigator);
-                        this._priceNavigator = (this._priceScale as PriceScaleVisual).PriceScaleNavigator;
+                        drawingVisuals.Add(((PriceScaleVisual)this._priceScale).PriceScaleNavigator);
+                        this._priceNavigator = ((PriceScaleVisual)this._priceScale).PriceScaleNavigator;
                         AddVisualChild(this._priceNavigator);
 
                     }
@@ -146,6 +143,13 @@ namespace ChartExplorer
             AddVisualChild(_price);
 
         }
+
+        public void AddMovingAverage(MovingAverageVisual meanVisual)
+        {
+            drawingVisuals.Add(meanVisual);
+            this._average = meanVisual;
+            AddVisualChild(_average);   
+        }
         protected override Visual GetVisualChild(int index)
         {
             return drawingVisuals[index];
@@ -156,6 +160,32 @@ namespace ChartExplorer
             {
                 return drawingVisuals.Count;
             }
+        }
+
+
+        public HitTestResultBehavior HitTestCallback(HitTestResult result)
+        {
+            if (result is not null)
+            {
+
+                if ((result.VisualHit.GetType() == typeof(PriceVisual)) || (result.VisualHit.GetType() == typeof(MovingAverageVisual)))
+                {
+                 
+                   ((DrawingVisual)result.VisualHit).Opacity = 0.4;
+                
+                  
+                }
+                else
+                {
+                    ((DrawingVisual)result.VisualHit).Opacity = 1.0;
+                }
+            }
+            else
+            {
+                this._price.Opacity = 1.0;
+                this._average.Opacity = 1.0;
+            }
+            return HitTestResultBehavior.Stop;
         }
 
     }

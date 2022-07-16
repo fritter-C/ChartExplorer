@@ -15,8 +15,9 @@ namespace ChartExplorer
         private GoTCanvas Canvas { get; set; }
         private PriceScale _priceScale { get; set; }
         private TimeScale TimeScale { get; set; }
-        private Price _price { get; set; }
-        private object owner { get; set; }
+        private MovingAverage movingAverage { get; set; }
+        private Price Price { get; set; }
+        private object Owner { get; set; }
 
         [DllImport("user32.dll")]
         private static extern int ShowCursor(bool bShow);
@@ -24,23 +25,30 @@ namespace ChartExplorer
         public GraphicManager(GoTCanvas canvas, object owner)
 
         {
-            this.owner = owner;
+            this.Owner = owner;
             this.Canvas = canvas;
-            this.Canvas.MouseMove += _canvas_MouseMove;
+            this.Canvas.MouseMove   += _canvas_MouseMove;
             this.Canvas.SizeChanged += _canvas_SizeChanged;
-            this.Canvas.MouseLeave += _canvas_MouseLeave;
-            this.Canvas.MouseEnter += _canvas_MouseEnter;
-            this.Canvas.MouseWheel += Canvas_MouseWheel;
-            this.Canvas.KeyDown   += Canvas_KeyDown;
-            this.Canvas.MouseUp += Canvas_MouseUp;
+            this.Canvas.MouseLeave  += _canvas_MouseLeave;
+            this.Canvas.MouseEnter  += _canvas_MouseEnter;
+            this.Canvas.MouseWheel  += Canvas_MouseWheel;
+            this.Canvas.KeyDown     += Canvas_KeyDown;
+            this.Canvas.MouseUp     += Canvas_MouseUp;
 
             CreatePrice();
             CreatePriceScale();
             CreateTimeScale();
+            CreateMovingAverage();
 
 
 
 
+        }
+
+        private void CreateMovingAverage()
+        {
+            movingAverage = new MovingAverage(Price, 20);
+            Canvas.AddMovingAverage(movingAverage.meanVisual);
         }
 
         private void Canvas_MouseUp(object sender, MouseButtonEventArgs e)
@@ -53,14 +61,14 @@ namespace ChartExplorer
         {
             if (e.Key == Key.Up)
             {
-                _priceScale.PriceScaleVisual.TopPrice++;
-                _priceScale.PriceScaleVisual.BottomPrice++;
+                _priceScale.PriceScaleVisual.TopPrice+= _priceScale.PriceScaleVisual.DSpan / 10;
+                _priceScale.PriceScaleVisual.BottomPrice+= _priceScale.PriceScaleVisual.DSpan / 10;
                 Canvas.InvalidateVisual();
             }
             else if (e.Key == Key.Down)
             {
-                _priceScale.PriceScaleVisual.TopPrice--;
-                _priceScale.PriceScaleVisual.BottomPrice--;
+                _priceScale.PriceScaleVisual.TopPrice -=_priceScale.PriceScaleVisual.DSpan / 10;
+                _priceScale.PriceScaleVisual.BottomPrice-=_priceScale.PriceScaleVisual.DSpan / 10; 
                 Canvas.InvalidateVisual();
             }
             else if (e.Key == Key.Right)
@@ -73,7 +81,7 @@ namespace ChartExplorer
             }
             else if (e.Key == Key.Left)
             {
-                if (TimeScale.TimeScaleVisual.ZoomTopOffset < TimeScale.TimeScaleVisual.DrawTimes.Count - 1)
+                if (TimeScale.TimeScaleVisual.ZoomTopOffset < TimeScale.TimeScaleVisual.DrawTimes.Count - 2)
                 {
                     TimeScale.TimeScaleVisual.ZoomTopOffset++;
                     Canvas.InvalidateVisual();
@@ -134,7 +142,7 @@ namespace ChartExplorer
                     TimeScale.TimeScaleVisual.Zoom = TimeScale.TimeScaleVisual.Zoom + 2;
                     Canvas.InvalidateVisual();
                 }
-                else if ((e.Delta < 0) && (TimeScale.TimeScaleVisual.Zoom > 0))
+                else if ((e.Delta < 0) && (TimeScale.TimeScaleVisual.Zoom > 0) && (TimeScale.TimeScaleVisual.Zoom > (TimeScale.TimeScaleVisual.DrawTimes.Count - 400)))
                 {
 
                     TimeScale.TimeScaleVisual.Zoom = TimeScale.TimeScaleVisual.Zoom - 2;
@@ -172,7 +180,7 @@ namespace ChartExplorer
             Y = (e.GetPosition(Canvas)).Y;
             X = (e.GetPosition(Canvas)).X;
             point = new Point(X, Y);
-
+           
            
             
             // Redraws pricetag
@@ -188,25 +196,20 @@ namespace ChartExplorer
             // Hightlight candle in case is over
             if (aux != null)
             {
-                vs = (Canvas as GoTCanvas).GetPriceIndicator();
-                if (vs != null)
+
+                for (int i = 0; i < aux.VisualsCount() - 1; ++i)
                 {
-                    if (vs is PriceVisual)
+                    vs = aux.GetDrawingVisual(i);
+
+                    if (vs != null)
                     {
-                        PriceVisual pv = (PriceVisual)vs;
+
                         HitTestResult result = vs.HitTest(point);
-                        if (result != null)
+                        aux.HitTestCallback(result);
+                        if (result != null) // Achou o objeto sai do loop
                         {
-
-                            if (pv.SetHightlight(true))
-                            {
-                                pv.DrawCandles(Canvas);
-                            }
-
-                        }
-                        else if (pv.SetHightlight(false))
-                        {
-                            pv.DrawCandles(Canvas);
+                            
+                            break;
                         }
                     }
                 }
@@ -215,10 +218,10 @@ namespace ChartExplorer
             // Hide the cursor in case is over PriceScale
             if (X > (Canvas.ActualWidth - PriceScaleVisual.c_PriceScaleWOffset))
             {
-                if (owner is Window)
+                if (Owner is Window)
                 {
 
-                    Window window = (Window)owner;
+                    Window window = (Window)Owner;
                     if ((window.Cursor != null) && (window.Cursor.Equals(Cursors.Arrow)))
                     {
                         window.Cursor = Cursors.None;
@@ -229,9 +232,9 @@ namespace ChartExplorer
             }
             else
             {
-                if (owner is Window)
+                if (Owner is Window)
                 {
-                    Window window = (Window)owner;
+                    Window window = (Window)Owner;
                     if ((window.Cursor != null) && (window.Cursor.Equals(Cursors.None)))
                     {
                         window.Cursor = Cursors.Arrow;
@@ -248,18 +251,18 @@ namespace ChartExplorer
         }
         public void CreatePriceScale()
         {
-            _priceScale = new PriceScale(_price);
-            (this.Canvas as GoTCanvas).AddPriceScale(_priceScale.PriceScaleVisual);
+            _priceScale = new PriceScale(Price);
+            this.Canvas.AddPriceScale(_priceScale.PriceScaleVisual);
         }
         public void CreateTimeScale()
         {
-            TimeScale = new TimeScale(_price);
-            (this.Canvas as GoTCanvas).AddTimeScale(TimeScale.TimeScaleVisual);
+            TimeScale = new TimeScale(Price);
+            this.Canvas.AddTimeScale(TimeScale.TimeScaleVisual);
         }
         public void CreatePrice()
         {
-            _price = new Price(); //Create Test
-            (this.Canvas as GoTCanvas).AddPrice(_price.PriceVisual);
+            Price = new Price(); //Create Test
+            this.Canvas.AddPrice(Price.PriceVisual);
         }
 
 

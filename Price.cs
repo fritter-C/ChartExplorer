@@ -13,20 +13,9 @@ using System.Globalization;
 
 namespace ChartExplorer
 {
-    public class CandleMap : ClassMap<Candle>
-    {
-        public CandleMap()
-        {
-            Map(p => p.CandleDate).Name("Date");
-            Map(p => p.dOpen).Name("Open");
-            Map(p => p.dMax).Name("High"); 
-            Map(p => p.dMin).Name("Low");
-            Map(p => p.dClose).Name("Close");
-        }
-    }
     public class Price
     {
-        public LinkedList<Candle> candles;
+        public List<Candle> candles;
         public double _dMax;
         public double _dMin;
         public DateTime _firstDate;
@@ -38,9 +27,8 @@ namespace ChartExplorer
 
         public Price()
         {
-            candles = new LinkedList<Candle>();
+            candles = new List<Candle>();
             Interval = Interval.Daily;
-            //GenerateTestSerie();
             
             ReadCsv();
             UpdateMaxMin();
@@ -55,35 +43,33 @@ namespace ChartExplorer
             Candle candle5 = new Candle(DateTime.Parse("06/07/2022"), 28.16, 27.67, 28.48, 26.91, Interval);
             Candle candle6 = new Candle(DateTime.Parse("07/07/2022"), 28, 28.48, 28.92, 28, Interval);
             Candle candle7 = new Candle(DateTime.Parse("08/07/2022"), 28.53, 28.8, 28.97, 28.37, Interval);
-            candles.AddLast(candle1);
-            candles.AddLast(candle2);
-            candles.AddLast(candle3);
-            candles.AddLast(candle4);
-            candles.AddLast(candle5);
-            candles.AddLast(candle6);
-            candles.AddLast(candle7);
+            candles.Add(candle1);
+            candles.Add(candle2);
+            candles.Add(candle3);
+            candles.Add(candle4);
+            candles.Add(candle5);
+            candles.Add(candle6);
+            candles.Add(candle7);
 
         }
         public void ReadCsv()
         {
-
-            DateTime dt;
             string aux;
             string[] subs;
             Candle candle;
 
             try
-
             {
                 using (var reader = new StreamReader(@"D:\Fernandos\fin\ChartExplorer\PETR4_D.csv"))
                 {
-                    reader.ReadLine();
+                    reader.ReadLine(); // Retira o header;
                     while ((aux = reader.ReadLine()) != null)
                     {
                         subs = aux.Split(';');
                         candle = new Candle(DateTime.Parse(subs[0]), Double.Parse(subs[1]), Double.Parse(subs[4]), Double.Parse(subs[2]), Double.Parse(subs[3]));
-                        candles.AddFirst(candle);
+                        candles.Add(candle);
                     }
+                    candles.Sort((x, y) => DateTime.Compare(x.CandleDate, y.CandleDate));
               
                 }
                 int c = candles.Count;
@@ -123,7 +109,7 @@ namespace ChartExplorer
     public class PriceVisual : DrawingVisual
     {
         public Price Price { get; set; }
-        public readonly LinkedList<Candle> Candles;
+        public readonly List<Candle> Candles;
         private bool highlight;
         private int nCandlesDraw;
 
@@ -138,11 +124,7 @@ namespace ChartExplorer
         public void DrawCandles(Canvas canvas)
         {
             DrawingContext dc;
-            dc = this.RenderOpen();
-            if (highlight)
-            {
-                dc.PushOpacity(0.5);
-            }
+            dc = this.RenderOpen(); 
 
             if ((this.Price.TimeScale != null) && (this.Price.TimeScale != null))
             {
@@ -186,8 +168,8 @@ namespace ChartExplorer
         public void DrawCandleBody(DrawingContext dc, Canvas canvas, double dOpenPos, double dClosePos, double X)
         {
             const int c_CandleSpacing = 6;
-            Rect rect = new Rect();
-            Pen pen = new Pen();
+            Rect rect = new();
+            Pen pen = new();
             Brush brush;
             double dAvaibleSpace = canvas.ActualWidth;
             pen.Brush = new SolidColorBrush(Colors.Black);

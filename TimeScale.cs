@@ -75,35 +75,37 @@ namespace ChartExplorer
             this.ZoomTopOffset = 0;
             this.ZoomBottomOffset = 0;
         }
-        public void DrawTimeScale(DrawingContext dc, Canvas canvas)
-        {
+        public void DrawTimeScale(Canvas canvas)
+        {   
             DateTime dateTime;
             int nEntrys;
             double dAvaiableLenght;
             double dSpaceNeeded;
-
+            DrawingContext dc;
             if (DrawTimes != null)
             {
-                nEntrys = DrawTimes.Count;
+                nEntrys = (DrawTimes.Count - ZoomTopOffset) - (Zoom - ZoomTopOffset);
                 Typeface typeface = new Typeface("Arial");
                 Brush brush = new SolidColorBrush(Colors.Black);
-                FormattedText sampleText = new FormattedText("01/12/99", System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, 12, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText sampleText = new FormattedText("01/12", System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, 12, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 this.DTextWidth = sampleText.Width;
                 dAvaiableLenght = canvas.ActualWidth - 30 - 2 * this.DTextWidth;
-                dSpaceNeeded = (nEntrys - Zoom) * this.DTextWidth;
-                this.DSpancing = (dAvaiableLenght - dSpaceNeeded) / (DrawTimes.Count - 1 - Zoom);
+                dSpaceNeeded = (nEntrys) * this.DTextWidth;
+                this.DSpancing = (dAvaiableLenght - dSpaceNeeded) / (nEntrys);
 
 
-                for (int i = (Zoom - ZoomTopOffset); i < (nEntrys - ZoomTopOffset) ; i++)
+                dc = RenderOpen();
+                for (int i = 0; i < nEntrys ; i++)
                 {
-                    dateTime = DrawTimes[i];
+                    dateTime = DrawTimes[Zoom + i];
 
-                    Point point = new Point(this.DTextWidth + (i -(Zoom - ZoomTopOffset)) * (this.DSpancing + this.DTextWidth), canvas.ActualHeight - 40);
+                    Point point = new Point(this.DTextWidth + i * (this.DSpancing + this.DTextWidth), canvas.ActualHeight - 40);
 
-                    FormattedText formattedText = new FormattedText(dateTime.ToString("dd/MM/yy"), System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, 12, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    FormattedText formattedText = new FormattedText(dateTime.ToString("dd/MM"), System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, 12, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                     dc.DrawText(formattedText, point);
 
                 }
+                dc.Close();
             }
         }
 
